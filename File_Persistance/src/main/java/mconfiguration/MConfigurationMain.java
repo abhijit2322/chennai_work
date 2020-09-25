@@ -14,10 +14,10 @@ String filename="config.txt";
 MConfirguration[] mconfig = new MConfirguration[4];
 public static void main(String[] args) {
 	MConfigurationMain t = new MConfigurationMain();
-    t.mconfig[0] = new MConfirguration("A","B","d","r");
-    t.mconfig[1] = new MConfirguration("C","D","e","r");
-    t.mconfig[2] = new MConfirguration("E","F","1L","2L");
-    t.mconfig[3] = new MConfirguration("G","H","1L","2L");
+    t.mconfig[0] = new MConfirguration("A","B","d","ui","r");
+    t.mconfig[1] = new MConfirguration("C","D","e","yu","r");
+    t.mconfig[2] = new MConfirguration("E","F","1L","78","2L");
+    t.mconfig[3] = new MConfirguration("G","H","1L","78","2L");
     t.writeFile();
     t.readFile();
     t.update();
@@ -48,7 +48,8 @@ public void readFile()
             System.out.println("room name = " + lmconfig[i].getRoomname()
             		+ " Sip User = " + lmconfig[i].getSipuserid()
             		+ " passwod = " + lmconfig[i].getSippassword()
-            		+ " status = " + lmconfig[i].getRoomstatus());
+            		+ " status = " + lmconfig[i].getRoomstatus()
+            		+ " Conference number = " + lmconfig[i].getConfnumber());
         }
         ois.close();   
         System.out.println("File Imported");

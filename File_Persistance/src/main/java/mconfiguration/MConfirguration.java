@@ -11,13 +11,15 @@ public class MConfirguration implements Serializable {
     private String sipuserid;
     private String sippassword ;
     private String roomstatus;
+    private String confnumber;
     
-    public MConfirguration(String roomname, String sipuserid, String sippassword,String roomstatus) {
+    public MConfirguration(String roomname, String sipuserid, String sippassword,String roomstatus,String confnumber) {
 		super();
 		this.roomname = roomname;
 		this.sipuserid = sipuserid;
 		this.sippassword = sippassword;
 		this.roomstatus=roomstatus;
+		this.confnumber=confnumber;
 	}
     
  
@@ -67,12 +69,23 @@ public class MConfirguration implements Serializable {
 	
 
 
+	public String getConfnumber() {
+		return confnumber;
+	}
+
+
+	public void setConfnumber(String confnumber) {
+		this.confnumber = confnumber;
+	}
+
+
 	@Override
     public String toString() {
         return new StringBuffer(" Room Name: ").append(this.roomname)
                 .append(" SIP User id : ").append(this.sipuserid)
                 .append(" Sip User Password : ").append(this.sippassword)
-                .append(" Room Status : ").append(this.roomstatus).toString();
+                .append(" Room Status : ").append(this.roomstatus)
+                .append("Conference Number: ").append(this.confnumber).toString();
     }
  
 }
