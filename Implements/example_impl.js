@@ -1,5 +1,19 @@
 /* global $, JitsiMeetJS */
 
+
+const options1 = {
+    hosts: {
+        domain: 'https://dev.thebanknet.com/',
+        muc: 'https://conference.dev.thebanknet.com' // FIXME: use XEP-0030
+    },
+    bosh: '//dev.thebanknet.com/http-bind?', // FIXME: use xep-0156 for that
+
+    // The name of client node advertised in XEP-0115 'c' stanza
+    clientNode: 'http://jitsi.org/jitsimeet'
+};
+
+
+
 const options = {
     hosts: {
         domain: 'beta.meet.jit.si',
@@ -13,6 +27,18 @@ const options = {
 
 };
 
+
+var commands = {
+    "displayName": "display-name",
+    "toggleAudio": "toggle-audio",
+    "toggleVideo": "toggle-video",
+    "toggleFilmStrip": "toggle-film-strip",
+    "toggleChat": "toggle-chat",
+    "toggleContactList": "toggle-contact-list",
+    "toggleShareScreen": "toggle-share-screen"
+};
+
+
 const confOptions = {
     openBridgeChannel: true
 };
@@ -24,6 +50,52 @@ let inVideo=false;
 
 let localTracks = [];
 const remoteTracks = {};
+
+
+
+
+var events = {
+    "incomingMessage": "incoming-message",
+    "outgoingMessage": "outgoing-message",
+    "displayNameChange": "display-name-change",
+    "participantJoined": "participant-joined",
+    "participantLeft": "participant-left",
+    "videoConferenceJoined": "video-conference-joined",
+    "videoConferenceLeft": "video-conference-left"
+};
+
+/**
+ * Sends the passed object to Jitsi Meet
+ * @param postis {Postis object} the postis instance that is going to be used
+ * to send the message
+ * @param object the object to be sent
+ * - method {sting}
+ * - params {object}
+ */
+function sendMessage(postis, object) {
+    postis.send(object);
+}
+
+/**
+ * Sends message for event enable/disable status change.
+ * @param postis {Postis object} the postis instance that is going to be used.
+ * @param event {string} the name of the event
+ * @param status {boolean} true - enabled; false - disabled;
+ */
+function changeEventStatus(postis, event, status) {
+    if (!(event in events)) {
+        console.error("Not supported event name.");
+        return;
+    }
+    sendMessage(postis, {
+        method: "jitsiSystemMessage",
+        params: { type: "eventStatus", name: events[event], value: status }
+    });
+}
+
+
+
+
 
 /**
  * Handles local tracks.
@@ -105,6 +177,7 @@ function onRemoteTrack(track) {
  */
 function onConferenceJoined() {
     console.log('conference joined!');
+
     isJoined = true;
     for (let i = 0; i < localTracks.length; i++) {
         room.addTrack(localTracks[i]);
@@ -117,6 +190,7 @@ function onConferenceJoined() {
  */
 function onUserLeft(id) {
     console.log('user left');
+    alert("user Left.............................");
     if (!remoteTracks[id]) {
         return;
     }
@@ -125,6 +199,11 @@ function onUserLeft(id) {
     for (let i = 0; i < tracks.length; i++) {
         tracks[i].detach($(`#${id}${tracks[i].getType()}`));
     }
+}
+
+function OnIncoming()
+{
+console.error("Incoming call...........");
 }
 
 /**
@@ -140,6 +219,7 @@ function onConnectionSuccess() {
         JitsiMeetJS.events.conference.CONFERENCE_JOINED,
         onConferenceJoined);
     room.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
+     alert("user joined............................." +id);
         console.log('user join');
         remoteTracks[id] = [];
     });
@@ -156,7 +236,47 @@ function onConnectionSuccess() {
     room.on(
         JitsiMeetJS.events.conference.PHONE_NUMBER_CHANGED,
         () => console.log(`${room.getPhoneNumber()} - ${room.getPhonePin()}`));
+
+     room.setDisplayName("abhijit");
+    // room.sendMessage(this, { method: commands['toggleVideo'], params: ' ' });
+
     room.join();
+}
+var achecked=false;
+function toggleAudio()
+{
+if (achecked==false){
+for (let i = 0; i < localTracks.length; i++)
+if(localTracks[i].getType() === 'audio')
+room.removeTrack(localTracks[i]);
+achecked=true;
+}
+else
+{
+achecked=false;
+for (let i = 0; i < localTracks.length; i++)
+if(localTracks[i].getType() === 'audio')
+room.addTrack(localTracks[i]);
+}
+
+}
+var vchecked=false;
+function toggleVideo()
+{
+if (vchecked==false){
+for (let i = 0; i < localTracks.length; i++)
+if(localTracks[i].getType() === 'video')
+room.removeTrack(localTracks[i]);
+vchecked=true;
+}
+else
+{
+vchecked=false;
+for (let i = 0; i < localTracks.length; i++)
+if(localTracks[i].getType() === 'video')
+room.addTrack(localTracks[i]);
+}
+
 }
 
 /**
@@ -254,10 +374,12 @@ const initOptions = {
     disableAudioLevels: true
 };
 
-
+var id=0;
 
 function init(){
-JitsiMeetJS.init(initOptions);
+
+
+var child=window.JitsiMeetJS.init(initOptions);
 connection = new JitsiMeetJS.JitsiConnection(null, null, options);
 
 connection.addEventListener(
@@ -276,6 +398,11 @@ JitsiMeetJS.mediaDevices.addEventListener(
 
 connection.connect();
 
+this.postis = Postis({
+        window: child,
+        scope: "jitsi_meet_external_api_" + id
+    });
+id++;
 }
 
 init();
@@ -364,4 +491,118 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
 function co_browserstart()
 {
 TogetherJS(this);
+}
+
+
+function Postis(options) {
+  var scope = options.scope;
+  var targetWindow = options.window;
+  var windowForEventListening = options.windowForEventListening || window;
+  var listeners = {};
+  var sendBuffer = [];
+  var listenBuffer = {};
+  var ready = false;
+  var readyMethod = "__ready__";
+  var readynessCheck;
+
+  var listener = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+
+    if (data.postis && data.scope === scope) {
+      var listenersForMethod = listeners[data.method];
+      if (listenersForMethod) {
+        for (var i = 0; i < listenersForMethod.length; i++) {
+          listenersForMethod[i].call(null, data.params);
+        }
+      } else {
+        listenBuffer[data.method] = listenBuffer[data.method] || [];
+        listenBuffer[data.method].push(data.params);
+      }
+    }
+  };
+
+  windowForEventListening.addEventListener("message", listener, false);
+
+  var postis = {
+    listen: function (method, callback) {
+      listeners[method] = listeners[method] || [];
+      listeners[method].push(callback);
+
+      var listenBufferForMethod = listenBuffer[method];
+      if (listenBufferForMethod) {
+        var listenersForMethod = listeners[method];
+        for (var i = 0; i < listenersForMethod.length; i++) {
+          for (var j = 0; j < listenBufferForMethod.length; j++) {
+            listenersForMethod[i].call(null, listenBufferForMethod[j]);
+          }
+        }
+      }
+      delete listenBuffer[method];
+    },
+
+    send: function (opts) {
+      var method = opts.method;
+
+      if ((ready || opts.method === readyMethod) && (targetWindow && typeof targetWindow.postMessage === "function")) {
+        targetWindow.postMessage(JSON.stringify({
+          postis: true,
+          scope: scope,
+          method: method,
+          params: opts.params
+        }), "*");
+      } else {
+        sendBuffer.push(opts);
+      }
+    },
+
+    ready: function (callback) {
+      if (ready) {
+        callback();
+      } else {
+        setTimeout(function () { postis.ready(callback); }, 50);
+      }
+    },
+
+    destroy: function (callback) {
+      clearInterval(readynessCheck);
+      ready = false;
+      if (windowForEventListening && typeof windowForEventListening.removeEventListener === "function") {
+        windowForEventListening.removeEventListener("message", listener);
+      }
+      callback && callback();
+    }
+  };
+
+  var readyCheckID = +new Date() + Math.random() + "";
+
+  readynessCheck = setInterval(function () {
+    postis.send({
+      method: readyMethod,
+      params: readyCheckID
+    });
+  }, 50);
+
+  postis.listen(readyMethod, function (id) {
+    if (id === readyCheckID) {
+      clearInterval(readynessCheck);
+      ready = true;
+
+      for (var i = 0; i < sendBuffer.length; i++) {
+        postis.send(sendBuffer[i]);
+      }
+      sendBuffer = [];
+    } else {
+      postis.send({
+        method: readyMethod,
+        params: id
+      });
+    }
+  });
+
+  return postis;
 }
